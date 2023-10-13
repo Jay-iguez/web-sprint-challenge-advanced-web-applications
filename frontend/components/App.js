@@ -22,6 +22,13 @@ export default function App() {
   const redirectToLogin = () => { navigate('/') }
   const redirectToArticles = () => { navigate('articles') }
 
+ 
+  /**
+   *  window.onbeforeunload = function() {
+    localStorage.clear()
+  }
+   */
+
   const logout = () => {
     // ✨ implement
     // If a token is in local storage it should be removed,
@@ -77,7 +84,6 @@ export default function App() {
     })
       .get(articlesUrl)
       .then(res => {
-        console.log(res)
         setArticles(res.data.articles)
         setMessage(res.data.message)
         setSpinnerOn(false)
@@ -95,15 +101,71 @@ export default function App() {
     // The flow is very similar to the `getArticles` function.
     // You'll know what to do! Use log statements or breakpoints
     // to inspect the response from the server.
+    setMessage('')
+    setSpinnerOn(true)
+
+    axios.create({headers : {
+      authorization: localStorage.getItem('token')
+    }})
+    .post(articlesUrl, article)
+    .then(res => {
+      setMessage(res.data.message)
+      setArticles([...articles, res.data.article])
+      setCurrentArticleId(null)
+      setSpinnerOn(false)
+    })
+    .catch(err => {
+      console.error(err)
+      setSpinnerOn(false)
+    })
   }
 
   const updateArticle = ({ article_id, article }) => {
     // ✨ implement
     // You got this!
+
+    setMessage('')
+    setSpinnerOn(true)
+
+    axios.create({headers : {
+      authorization : localStorage.getItem('token')
+    }})
+    .put(articlesUrl + `/${article_id}`, article)
+    .then(res => {
+      setArticles([...articles, res.data.article])
+      setCurrentArticleId(null)
+      setMessage(res.data.message)
+      setSpinnerOn(false)
+    })
+    .catch(err => {
+      console.error(err)
+      setSpinnerOn(false)
+    })
   }
 
   const deleteArticle = article_id => {
-    // ✨ implement
+
+    setMessage('')
+    setSpinnerOn(true)
+
+    axios.create({headers: {
+      authorization: localStorage.getItem('token')
+    }})
+    .delete(articlesUrl + `/${article_id}`)
+    .then(res => {
+      setMessage(res.data.message)
+      const articlesMinusDeleted = articles.filter(art => {
+        if (art.article_id !== article_id){
+          return art
+        }
+      })
+      setArticles(articlesMinusDeleted)
+      setSpinnerOn(false)
+    })
+    .catch(err => {
+      console.error(err)
+      setSpinnerOn(false)
+    })
   }
 
   return (
@@ -122,8 +184,8 @@ export default function App() {
           <Route path="/" element={<LoginForm login={login} />} />
           <Route path="articles" element={
             <>
-              <ArticleForm />
-              <Articles articles={articles} getArticles={getArticles} updateArticle={updateArticle} deleteArticle={deleteArticle} />
+              <ArticleForm articles={articles} postArticle={postArticle} updateArticle={updateArticle} currentArticle={currentArticleId} setCurrentArticleId={setCurrentArticleId} />
+              <Articles articles={articles} getArticles={getArticles} currentArticleId={currentArticleId} setCurrentArticleId={setCurrentArticleId} deleteArticle={deleteArticle}/>
             </>
           } />
         </Routes>
